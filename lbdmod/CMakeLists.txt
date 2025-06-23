@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 project(lbd_mod)
 
 ###============= C++11 support====================================
@@ -29,9 +29,15 @@ set(PYTHON_NUMPY_INCLUDE_DIRS "/usr/local/lib/python3.5/dist-packages/numpy/core
 set(PYTHON_LIBRARY "python2.7")
 set(PYTHON_EXECUTABLE "python")
 set(PYTHON_PACKAGES_PATH "/usr/local/lib/python3.5/dist-packages/")
+set(Python_ADDITIONAL_VERSIONS ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+find_package(Boost 1.74 REQUIRED COMPONENTS python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
+if(NOT Boost_FOUND)
+  message(STATUS "Trying alternative component name python-py<version>")
+  find_package(Boost 1.74 REQUIRED COMPONENTS python-py${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
+endif()
 #=============== Find Packages ====================================
 ## OpenCV
-find_package(OpenCV 3 COMPONENTS core imgproc highgui imgcodecs REQUIRED)
+find_package(OpenCV 4 COMPONENTS core imgproc highgui imgcodecs REQUIRED)
 ## Boost
 if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
     # Provisions for typical Boost compiled on Windows
