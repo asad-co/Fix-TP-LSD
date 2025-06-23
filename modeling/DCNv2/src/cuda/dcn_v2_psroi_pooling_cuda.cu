@@ -18,6 +18,10 @@
 #include <torch/extension.h>
 #include <THC/THCAtomics.cuh>
 #include <THC/THCDeviceUtils.cuh>
+#include <c10/cuda/CUDAStream.h>
+#include <ATen/ceil_div.h>
+#include <c10/cuda/CUDACachingAllocator.h> 
+#include <c10/macros/Macros.h>             
 
 #define CUDA_KERNEL_LOOP(i, n)                        \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -307,14 +311,17 @@ dcn_v2_psroi_pooling_cuda_forward(const at::Tensor &input,
 
   if (out.numel() == 0)
   {
-    THCudaCheck(cudaGetLastError());
+    C10_CUDA_CHECK(cudaGetLastError());
     return std::make_tuple(out, top_count);
   }
 
-  dim3 grid(std::min(THCCeilDiv(out_size, 512L), 4096L));
+  int64_t blocks = (out_size + 512 - 1) / 512;  
+  blocks = std::min(blocks, (int64_t)4096);
+  dim3 grid(blocks);
   dim3 block(512);
 
-  AT_DISPATCH_FLOATING_TYPES(input.type(), "dcn_v2_psroi_pooling_cuda_forward", [&] {
+  //convert input.type() to input.scalar_type()
+  AT_DISPATCH_FLOATING_TYPES(input.scalar_type(), "dcn_v2_psroi_pooling_cuda_forward", [&] {
     DeformablePSROIPoolForwardKernel<scalar_t><<<grid, block, 0, stream>>>(
         out_size,
         input.contiguous().data<scalar_t>(),
@@ -336,7 +343,8 @@ dcn_v2_psroi_pooling_cuda_forward(const at::Tensor &input,
         out.data<scalar_t>(),
         top_count.data<scalar_t>());
   });
-  THCudaCheck(cudaGetLastError());
+  C10_CUDA_CHECK(cudaGetLastError());
+
   return std::make_tuple(out, top_count);
 }
 
@@ -380,15 +388,19 @@ dcn_v2_psroi_pooling_cuda_backward(const at::Tensor &out_grad,
 
   if (input_grad.numel() == 0)
   {
-    THCudaCheck(cudaGetLastError());
+    C10_CUDA_CHECK(cudaGetLastError());
+
     return std::make_tuple(input_grad, trans_grad);
   }
 
-  dim3 grid(std::min(THCCeilDiv(out_size, 512L), 4096L));
+  int64_t blocks = (out_size + 512 - 1) / 512;  
+  blocks = std::min(blocks, (int64_t)4096);
+  dim3 grid(blocks); 
   dim3 block(512);
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
-  AT_DISPATCH_FLOATING_TYPES(out_grad.type(), "dcn_v2_psroi_pooling_cuda_backward", [&] {
+  //convert out_grad.type() to out_grad.scalar_type()
+  AT_DISPATCH_FLOATING_TYPES(out_grad.scalar_type(), "dcn_v2_psroi_pooling_cuda_backward", [&] {
     DeformablePSROIPoolBackwardAccKernel<scalar_t><<<grid, block, 0, stream>>>(
         out_size,
         out_grad.contiguous().data<scalar_t>(),
@@ -414,6 +426,7 @@ dcn_v2_psroi_pooling_cuda_backward(const at::Tensor &out_grad,
         num_classes,
         channels_each_class);
   });
-  THCudaCheck(cudaGetLastError());
+    C10_CUDA_CHECK(cudaGetLastError());
+
   return std::make_tuple(input_grad, trans_grad);
 }
