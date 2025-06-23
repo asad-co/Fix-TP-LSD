@@ -22,7 +22,7 @@ dcn_v2_forward(const at::Tensor &input,
                const int dilation_w,
                const int deformable_group)
 {
-    if (input.type().is_cuda())
+    if (input.is_cuda())
     {
 #ifdef WITH_CUDA
         return dcn_v2_cuda_forward(input, weight, bias, offset, mask,
@@ -51,7 +51,7 @@ dcn_v2_backward(const at::Tensor &input,
                 int dilation_h, int dilation_w,
                 int deformable_group)
 {
-    if (input.type().is_cuda())
+    if (input.is_cuda())
     {
 #ifdef WITH_CUDA
         return dcn_v2_cuda_backward(input,
@@ -85,7 +85,7 @@ dcn_v2_psroi_pooling_forward(const at::Tensor &input,
                              const int sample_per_part,
                              const float trans_std)
 {
-    if (input.type().is_cuda())
+    if (input.is_cuda())
     {
 #ifdef WITH_CUDA
         return dcn_v2_psroi_pooling_cuda_forward(input,
@@ -121,7 +121,7 @@ dcn_v2_psroi_pooling_backward(const at::Tensor &out_grad,
                               const int sample_per_part,
                               const float trans_std)
 {
-    if (input.type().is_cuda())
+    if (input.is_cuda())
     {
 #ifdef WITH_CUDA
         return dcn_v2_psroi_pooling_cuda_backward(out_grad,
