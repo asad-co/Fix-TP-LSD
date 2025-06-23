@@ -8,7 +8,12 @@
 #include <THC/THCAtomics.cuh>
 #include <THC/THCDeviceUtils.cuh>
 
-extern THCState *state;
+#include <ATen/cuda/CUDAContext.h>
+#include <c10/cuda/CUDACachingAllocator.h>
+#include <cublas_v2.h>
+
+cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+cublasHandle_t handle = at::cuda::getCurrentCUDABlasHandle();
 
 // author: Charles Shang
 // https://github.com/torch/cunn/blob/master/lib/THCUNN/generic/SpatialConvolutionMM.cu
@@ -94,20 +99,23 @@ dcn_v2_cuda_forward(const at::Tensor &input,
     // when batch size is large.
     // launch batch threads
     int matrices_size = batch * sizeof(float *);
-    auto input_b = static_cast<const float **>(THCudaMalloc(state, matrices_size));
-    auto output_b = static_cast<float **>(THCudaMalloc(state, matrices_size));
-    auto columns_b = static_cast<float **>(THCudaMalloc(state, matrices_size));
-    auto ones_b = static_cast<const float **>(THCudaMalloc(state, matrices_size));
-    auto weight_b = static_cast<const float **>(THCudaMalloc(state, matrices_size));
-    auto bias_b = static_cast<const float **>(THCudaMalloc(state, matrices_size));
+    auto input_b = c10::cuda::CUDACachingAllocator::raw_alloc(matrices_size);
+    auto output_b = c10::cuda::CUDACachingAllocator::raw_alloc(matrices_size);
+    auto columns_b = c10::cuda::CUDACachingAllocator::raw_alloc(matrices_size);
+    auto ones_b = c10::cuda::CUDACachingAllocator::raw_alloc(matrices_size);
+    auto weight_b = c10::cuda::CUDACachingAllocator::raw_alloc(matrices_size);
+    auto bias_b = c10::cuda::CUDACachingAllocator::raw_alloc(matrices_size);
 
     const int block = 128;
     const int grid = (batch + block - 1) / block;
 
-    createBatchGemmBuffer<<<grid, block, 0, THCState_getCurrentStream(state)>>>(
-        input_b, output_b,
-        columns_b, ones_b,
-        weight_b, bias_b,
+    createBatchGemmBuffer<<<grid, block, 0, c10::cuda::getCurrentCUDAStream()>>>(
+        reinterpret_cast<const float**>(input_b),
+        reinterpret_cast<float**>(output_b),
+        reinterpret_cast<float**>(columns_b),
+        reinterpret_cast<const float**>(ones_b),
+        reinterpret_cast<const float**>(weight_b),
+        reinterpret_cast<const float**>(bias_b),
         input.data<scalar_t>(),
         output.data<scalar_t>(),
         columns.data<scalar_t>(),
@@ -123,20 +131,22 @@ dcn_v2_cuda_forward(const at::Tensor &input,
     long m_ = channels_out;
     long n_ = height_out * width_out;
     long k_ = 1;
-    THCudaBlas_SgemmBatched(state,
-                            't',
-                            'n',
-                            n_,
-                            m_,
-                            k_,
-                            1.0f,
-                            ones_b, k_,
-                            bias_b, k_,
-                            0.0f,
-                            output_b, n_,
-                            batch);
 
-    modulated_deformable_im2col_cuda(THCState_getCurrentStream(state),
+    float alpha = 1.0f;
+    float beta = 1.0f;
+    cublasSgemmBatched(
+    handle,
+    CUBLAS_OP_T, CUBLAS_OP_N,
+    n_, m_, k_,
+    &alpha,
+    reinterpret_cast<const float**>(ones_b), k_,
+    reinterpret_cast<const float**>(bias_b), k_,
+    &beta,
+    reinterpret_cast<float**>(output_b), n_,
+    batch);
+
+
+    modulated_deformable_im2col_cuda(c10::cuda::getCurrentCUDAStream(),
                                      input.data<scalar_t>(),
                                      offset.data<scalar_t>(),
                                      mask.data<scalar_t>(),
@@ -149,25 +159,27 @@ dcn_v2_cuda_forward(const at::Tensor &input,
     long m = channels_out;
     long n = height_out * width_out;
     long k = channels * kernel_h * kernel_w;
-    THCudaBlas_SgemmBatched(state,
-                            'n',
-                            'n',
-                            n,
-                            m,
-                            k,
-                            1.0f,
-                            (const float **)columns_b, n,
-                            weight_b, k,
-                            1.0f,
-                            output_b, n,
-                            batch);
 
-    THCudaFree(state, input_b);
-    THCudaFree(state, output_b);
-    THCudaFree(state, columns_b);
-    THCudaFree(state, ones_b);
-    THCudaFree(state, weight_b);
-    THCudaFree(state, bias_b);
+    alpha = 1.0f;
+    beta = 1.0f;
+    cublasSgemmBatched(
+        handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        n, m, k,
+        &alpha,
+        (const float**)columns_b, n,
+        (const float**)weight_b, k,
+        &beta,
+        (float**)output_b, n,
+        batch);
+
+
+    c10::cuda::CUDACachingAllocator::raw_delete(input_b);
+    c10::cuda::CUDACachingAllocator::raw_delete(output_b);
+    c10::cuda::CUDACachingAllocator::raw_delete(columns_b);
+    c10::cuda::CUDACachingAllocator::raw_delete(ones_b);
+    c10::cuda::CUDACachingAllocator::raw_delete(weight_b);
+    c10::cuda::CUDACachingAllocator::raw_delete(bias_b);
     return output;
 }
 
@@ -216,8 +228,9 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
                                              int deformable_group)
 {
 
-    THArgCheck(input.is_contiguous(), 1, "input tensor has to be contiguous");
-    THArgCheck(weight.is_contiguous(), 2, "weight tensor has to be contiguous");
+
+    TORCH_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
+    TORCH_CHECK(weight.is_contiguous(),  "weight tensor has to be contiguous");
 
     AT_ASSERTM(input.type().is_cuda(), "input must be a CUDA tensor");
     AT_ASSERTM(weight.type().is_cuda(), "weight must be a CUDA tensor");
@@ -270,13 +283,22 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
         long n = height_out * width_out;
         long k = channels_out;
 
-        THCudaBlas_Sgemm(state, 'n', 't', n, m, k, 1.0f,
-                         grad_output_n.data<scalar_t>(), n,
-                         weight.data<scalar_t>(), m, 0.0f,
-                         columns.data<scalar_t>(), n);
+ 
+        float alpha = 1.0f;
+        float beta = 0.0f;
+        cublasSgemm(
+            handle,
+            CUBLAS_OP_N, CUBLAS_OP_T,
+            n, m, k,
+            &alpha,
+            grad_output_n.data_ptr<scalar_t>(), n,
+            weight.data_ptr<scalar_t>(), m,
+            &beta,
+            columns.data_ptr<scalar_t>(), n);
+
 
         // gradient w.r.t. input coordinate data
-        modulated_deformable_col2im_coord_cuda(THCState_getCurrentStream(state),
+        modulated_deformable_col2im_coord_cuda(c10::cuda::getCurrentCUDAStream(),
                                                columns.data<scalar_t>(),
                                                input_n.data<scalar_t>(),
                                                offset_n.data<scalar_t>(),
@@ -288,7 +310,7 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
                                                grad_offset_n.data<scalar_t>(),
                                                grad_mask_n.data<scalar_t>());
         // gradient w.r.t. input data
-        modulated_deformable_col2im_cuda(THCState_getCurrentStream(state),
+        modulated_deformable_col2im_cuda(c10::cuda::getCurrentCUDAStream(),
                                          columns.data<scalar_t>(),
                                          offset_n.data<scalar_t>(),
                                          mask_n.data<scalar_t>(),
@@ -299,7 +321,7 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
                                          grad_input_n.data<scalar_t>());
 
         // gradient w.r.t. weight, dWeight should accumulate across the batch and group
-        modulated_deformable_im2col_cuda(THCState_getCurrentStream(state),
+        modulated_deformable_im2col_cuda(c10::cuda::getCurrentCUDAStream(),
                                          input_n.data<scalar_t>(),
                                          offset_n.data<scalar_t>(),
                                          mask_n.data<scalar_t>(),
@@ -313,20 +335,32 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
         long n_ = channels * kernel_h * kernel_w;
         long k_ = height_out * width_out;
 
-        THCudaBlas_Sgemm(state, 't', 'n', n_, m_, k_, 1.0f,
-                         columns.data<scalar_t>(), k_,
-                         grad_output_n.data<scalar_t>(), k_, 1.0f,
-                         grad_weight.data<scalar_t>(), n_);
+ 
+        alpha = 1.0f;
+        beta = 1.0f;
+        cublasSgemm(
+            handle,
+            CUBLAS_OP_T, CUBLAS_OP_N,
+            n_, m_, k_,
+            &alpha,
+            columns.data_ptr<scalar_t>(), k_,
+            grad_output_n.data_ptr<scalar_t>(), k_,
+            &beta,
+            grad_weight.data_ptr<scalar_t>(), n_);
 
-        // gradient w.r.t. bias
-        // long m_ = channels_out;
-        // long k__ = height_out * width_out;
-        THCudaBlas_Sgemv(state,
-                         't',
-                         k_, m_, 1.0f,
-                         grad_output_n.data<scalar_t>(), k_,
-                         ones.data<scalar_t>(), 1, 1.0f,
-                         grad_bias.data<scalar_t>(), 1);
+  
+        alpha = 1.0f;
+        beta = 1.0f;
+        cublasSgemm(
+            handle,
+            CUBLAS_OP_N, CUBLAS_OP_N,
+            1, m_, k_,
+            &alpha,
+            ones.data_ptr<scalar_t>(), 1,
+            grad_output_n.data_ptr<scalar_t>(), k_,
+            &beta,
+            grad_bias.data_ptr<scalar_t>(), 1);
+            
     }
 
     return {
