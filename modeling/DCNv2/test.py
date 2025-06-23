@@ -5,6 +5,10 @@ from __future__ import division
 
 import time
 import torch
+if torch.cuda.is_available():
+    torch.cuda.init()
+
+    
 import torch.nn as nn
 from torch.autograd import gradcheck
 import torch.backends.cudnn as cudnn
