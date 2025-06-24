@@ -80,16 +80,17 @@ namespace pylbd {
 
 
 #if (PY_VERSION_HEX >= 0x03000000)
-
     static void *init_ar() {
-#else
-        static void init_ar(){
-#endif
         Py_Initialize();
-
         import_array();
-        return NUMPY_IMPORT_ARRAY_RETVAL;
+        return NULL;
     }
+#else
+    static void init_ar(){
+        Py_Initialize();
+        import_array();
+    }
+#endif
 
     BOOST_PYTHON_MODULE (pylbd) {
         //using namespace XM;
