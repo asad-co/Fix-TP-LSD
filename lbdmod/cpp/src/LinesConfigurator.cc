@@ -33,12 +33,12 @@ StoredLineExtractor* LinesConfigurator::CreateLineExtractor(const std::string &s
     cv::FileStorage fSettings(strSettings, cv::FileStorage::READ);
     StoredLineExtractor* extractor = NULL;
     bool isTest = (int)fSettings["test"];
-    if (fSettings["ldType"] == "LBDFloat")
+    if ((std::string)fSettings["ldType"] == "LBDFloat")
     {
         std::cout << "Using LBD Float stored, test = " << isTest << std::endl;
         extractor = new LBDFloatExtractor(fSettings["lineDetectionsPath"], fSettings["lineDescriptorsPath"], isLeft, isTest);
     }
-    if (fSettings["ldType"] == "LLD")
+    if ((std::string)fSettings["ldType"] == "LLD")
     {
         std::cout << " Using learned line descriptor " << (std::string) fSettings["lineDetectionsPath"] << std::endl;
         std::cout << "   " << (std::string) fSettings["lineDescriptorsPath"] << std::endl;
@@ -54,12 +54,12 @@ StoredLineExtractor* LinesConfigurator::CreateLineExtractor(const std::string &s
 LineMatcher* LinesConfigurator::CreateLineMatcher(const cv::FileStorage& fSettings) {
     LineMatcher* matcher = static_cast<LineMatcher*> (NULL);
     std::cout << " creating LM " << std::endl;
-    if (fSettings["ldType"] == "LBDFloat")
+    if ((std::string)fSettings["ldType"] == "LBDFloat")
     {
         matcher = new LBDFloatLineMatcher();
         std::cout << " LBD LM " << std::endl;
     }
-    if (fSettings["ldType"] == "LLD")
+    if ((std::string)fSettings["ldType"] == "LLD")
     {
         matcher = new LLDLineMatcher();
         std::cout << " LLD LM " << std::endl;
