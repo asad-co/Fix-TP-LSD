@@ -1,0 +1,13 @@
+#ifndef NUMPY_FIX_H
+#define NUMPY_FIX_H
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
+#if PY_VERSION_HEX >= 0x03000000
+    #define NUMPY_IMPORT_ARRAY_RETVAL NULL
+#else
+    #define NUMPY_IMPORT_ARRAY_RETVAL
+#endif
+
+#endif // NUMPY_FIX_H
+
