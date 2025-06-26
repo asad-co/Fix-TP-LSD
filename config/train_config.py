@@ -1,7 +1,6 @@
 # config/train_config.py
 import os
-from modeling.TP_Net import Res320, Res160
-from modeling.Hourglass import HourglassNet
+# Don't import models directly here - defer initialization
 
 class TrainParameters:
     def __init__(self):
@@ -41,16 +40,10 @@ class TrainParameters:
         
         # Model selection and loading
         self.resume = False
-        self.selftrain = True
+        self.selftrain = False
         
-        # Choose one of the model architectures
-        # self.model = Res320(self.head)
-        # self.load_model_path = './pretraineds/Res320.pth'
-        # self.inres = (320, 320)
-        # self.outres = (320, 320)
-        
-        # TP-LSD-Lite
-        self.model = Res160(self.head)
+        # Model parameters without actual initialization
+        self.model_type = 'Res160'  # Options: 'Res320', 'Res160', 'HourglassNet'
         self.load_model_path = './pretraineds/Res160.pth'
         self.inres = (320, 320)
         self.outres = (320, 320)
@@ -61,3 +54,20 @@ class TrainParameters:
         os.makedirs(self.save_path, exist_ok=True)
         if self.cuda == False:
             raise Exception('CPU version for training is not implemented.')
+        
+    def create_model(self):
+        """
+        Create model instance on demand rather than at import time
+        """
+        # Import here to avoid premature CUDA initialization
+        from modeling.TP_Net import Res320, Res160
+        from modeling.Hourglass import HourglassNet
+        
+        if self.model_type == 'Res320':
+            return Res320(self.head)
+        elif self.model_type == 'Res160':
+            return Res160(self.head)
+        elif self.model_type == 'HourglassNet':
+            return HourglassNet(self.head)
+        else:
+            raise ValueError(f"Unknown model type: {self.model_type}")
