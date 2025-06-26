@@ -255,10 +255,6 @@ class VideoStreamer(object):
 
 class TplsdDetect:
   def __init__(self, modeluse):
-    from utils.utils import load_model
-    from modeling.TP_Net import Res160, Res320
-    from modeling.Hourglass import HourglassNet
-
     # Initialize CUDA properly first
     print("CUDA available:", torch.cuda.is_available())
     if torch.cuda.is_available():
@@ -269,6 +265,11 @@ class TplsdDetect:
         device = torch.device('cuda:0')
     else:
         raise EOFError('CUDA not available, CPU version not implemented.')
+    
+    from utils.utils import load_model
+    from modeling.TP_Net import Res160, Res320
+    from modeling.Hourglass import HourglassNet
+
     
     print('Using device: ', device)
     self.head = {'center': 1, 'dis': 4, 'line': 1}
