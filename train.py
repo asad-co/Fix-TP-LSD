@@ -1,6 +1,8 @@
 # train.py
-import os
 import torch
+assert torch.cuda.is_available(), "CUDA is required for training"
+
+import os
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -124,14 +126,14 @@ def train(params):
     """
     Main training function
     """
-    # Check CUDA availability and initialize properly
-    if torch.cuda.is_available():
-        torch.cuda.init() # Ensure CUDA is initialized
-        device = torch.device('cuda')
-        torch.cuda.set_device(0) # Explicitly set to first device
-        print(f"Using CUDA device: {torch.cuda.current_device()}")
-    else:
+    # Check CUDA availability
+    if not torch.cuda.is_available():
         raise RuntimeError("CUDA not available, but training requires GPU")
+    
+    # Set device - use the standard PyTorch approach
+    device = torch.device("cuda:0")
+    torch.cuda.set_device(device)
+    print(f"Using CUDA device {torch.cuda.current_device()}: {torch.cuda.get_device_name(0)}")
     
     # Create datasets and data loaders
     train_dataset = LineSegmentDataset(
@@ -150,8 +152,9 @@ def train(params):
         num_workers=params.num_workers, pin_memory=True
     )
     
-    # Initialize model
-    model = load_model(params.model, params.load_model_path, params.resume, params.selftrain)
+    # Create the model on demand
+    model = params.create_model()
+    model = load_model(model, params.load_model_path, params.resume, params.selftrain)
     if torch.cuda.is_available():
         model = model.cuda()
         model = nn.DataParallel(model)
@@ -264,5 +267,7 @@ def train(params):
             print(f'Saved best model to {best_model_path}')
 
 if __name__ == '__main__':
+    print("Starting Training: Gathering Train Parameters")
     params = TrainParameters()
+    print("Parameters acquired! starting training")
     train(params)
