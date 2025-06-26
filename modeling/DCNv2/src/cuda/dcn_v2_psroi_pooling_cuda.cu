@@ -285,9 +285,9 @@ dcn_v2_psroi_pooling_cuda_forward(const at::Tensor &input,
                                   const int sample_per_part,
                                   const float trans_std)
 {
-  AT_ASSERTM(input.type().is_cuda(), "input must be a CUDA tensor");
-  AT_ASSERTM(bbox.type().is_cuda(), "rois must be a CUDA tensor");
-  AT_ASSERTM(trans.type().is_cuda(), "trans must be a CUDA tensor");
+  AT_ASSERTM(input.device().is_cuda(), "input must be a CUDA tensor");
+  AT_ASSERTM(bbox.device().is_cuda(), "rois must be a CUDA tensor");
+  AT_ASSERTM(trans.device().is_cuda(), "trans must be a CUDA tensor");
 
   const int batch = input.size(0);
   const int channels = input.size(1);
@@ -363,11 +363,11 @@ dcn_v2_psroi_pooling_cuda_backward(const at::Tensor &out_grad,
                                    const int sample_per_part,
                                    const float trans_std)
 {
-  AT_ASSERTM(out_grad.type().is_cuda(), "out_grad must be a CUDA tensor");
-  AT_ASSERTM(input.type().is_cuda(), "input must be a CUDA tensor");
-  AT_ASSERTM(bbox.type().is_cuda(), "bbox must be a CUDA tensor");
-  AT_ASSERTM(trans.type().is_cuda(), "trans must be a CUDA tensor");
-  AT_ASSERTM(top_count.type().is_cuda(), "top_count must be a CUDA tensor");
+  AT_ASSERTM(out_grad.device().is_cuda(), "out_grad must be a CUDA tensor");
+  AT_ASSERTM(input.device().is_cuda(), "input must be a CUDA tensor");
+  AT_ASSERTM(bbox.device().is_cuda(), "bbox must be a CUDA tensor");
+  AT_ASSERTM(trans.device().is_cuda(), "trans must be a CUDA tensor");
+  AT_ASSERTM(top_count.device().is_cuda(), "top_count must be a CUDA tensor");
 
   const int batch = input.size(0);
   const int channels = input.size(1);
