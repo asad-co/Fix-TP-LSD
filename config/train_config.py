@@ -12,7 +12,7 @@ class TrainParameters:
         self.label_dir = os.path.join(self.dataset_dir, 'labels')
         
         # Training settings
-        self.save_path = 'log/train/'
+        self.save_path = '/content/log/train/'
         self.batch_size = 4
         self.num_workers = 4
         self.head = {'center': 1, 'dis': 4, 'line': 1}
@@ -21,14 +21,14 @@ class TrainParameters:
         self.save_interval = 5
         
         # Learning rate settings
-        self.learning_rate = 1e-4
+        self.learning_rate = 1e-5
         self.lr_decay_epochs = [40, 60, 80]
         self.lr_decay_rate = 0.5
         
         # Loss weight settings
-        self.center_weight = 1.0
-        self.dis_weight = 0.5
-        self.line_weight = 1.0
+        self.center_weight = 0.01
+        self.dis_weight = 0.01
+        self.line_weight = 0.01
         
         # Optimizer weight settings
         self.optim_weight = {
