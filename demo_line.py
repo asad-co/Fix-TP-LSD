@@ -259,6 +259,20 @@ class TplsdDetect:
     from modeling.TP_Net import Res160, Res320
     from modeling.Hourglass import HourglassNet
 
+    # Initialize CUDA properly first
+    print("CUDA available:", torch.cuda.is_available())
+    if torch.cuda.is_available():
+        print("CUDA device count:", torch.cuda.device_count())
+        torch.cuda.init() # Ensure CUDA is initialized
+        torch.cuda.set_device(0) # Explicitly set to first device
+        print("Using CUDA device:", torch.cuda.current_device())
+        device = torch.device('cuda:0')
+    else:
+        raise EOFError('CUDA not available, CPU version not implemented.')
+    
+    print('Using device: ', device)
+    self.head = {'center': 1, 'dis': 4, 'line': 1}
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == 'cpu':
       raise EOFError('cpu version for training is not implemented.')
