@@ -82,14 +82,7 @@ def inference(model, data_loader, threshold_list, lmbd_list, showvideo=True):
 
 print('Starting testing...')
 
-if not BasicParameters.showvideo:
-    # threshold of the root-point detection confidence
-    threshold_list=[0.01, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8]
-    # power coefficient α in point filter module
-    lmbd_list = [0.5]
-    inference(model, test_loader, threshold_list, lmbd_list, showvideo=False)
-else:
-    threshold_list = [0.25]
-    lmbd_list = [0.5]
-    assert len(threshold_list) == 1 and len(lmbd_list) == 1
-    inference(model, test_loader, threshold_list, lmbd_list, showvideo=True)
+threshold_list=[0.01, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+lmbd_list = [0.5]
+inference(model, test_loader, threshold_list, lmbd_list, showvideo=False)
+

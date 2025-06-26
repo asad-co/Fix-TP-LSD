@@ -2,8 +2,7 @@ import os
 import argparse
 import numpy as np
 import sys
-from modeling.Hourglass import HourglassNet
-from modeling.TP_Net import Res160, Res320
+
 
 class BasicParam(object):
     def __init__(self):
@@ -11,6 +10,9 @@ class BasicParam(object):
         self.dataset_dir = '/content/dataset/images'  # Path to your test images
         self.load_model_path = '/content/log/train/model_best.pth'  # Path to your trained model
         self.save_path = '/content/output_dir' 
+
+        from modeling.Hourglass import HourglassNet
+        from modeling.TP_Net import Res160, Res320
 
         self.batch_size = 1
         self.num_workers = 0
@@ -29,7 +31,7 @@ class BasicParam(object):
 
         self.logger = True
 
-        self.showvideo = True
+        self.showvideo = False
 
         os.makedirs(self.save_path, exist_ok=True)
         if self.cuda == False:
