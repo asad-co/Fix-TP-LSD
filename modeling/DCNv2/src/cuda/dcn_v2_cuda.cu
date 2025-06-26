@@ -116,12 +116,12 @@ dcn_v2_cuda_forward(const at::Tensor &input,
         reinterpret_cast<const float**>(ones_b),
         reinterpret_cast<const float**>(weight_b),
         reinterpret_cast<const float**>(bias_b),
-        input.data<scalar_t>(),
-        output.data<scalar_t>(),
-        columns.data<scalar_t>(),
-        ones.data<scalar_t>(),
-        weight.data<scalar_t>(),
-        bias.data<scalar_t>(),
+        input.data_ptr<scalar_t>(),
+        output.data_ptr<scalar_t>(),
+        columns.data_ptr<scalar_t>(),
+        ones.data_ptr<scalar_t>(),
+        weight.data_ptr<scalar_t>(),
+        bias.data_ptr<scalar_t>(),
         channels * width * height,
         channels_out * width_out * height_out,
         channels * kernel_h * kernel_w * height_out * width_out,
@@ -147,14 +147,14 @@ dcn_v2_cuda_forward(const at::Tensor &input,
 
 
     modulated_deformable_im2col_cuda(c10::cuda::getCurrentCUDAStream(),
-                                     input.data<scalar_t>(),
-                                     offset.data<scalar_t>(),
-                                     mask.data<scalar_t>(),
+                                     input.data_ptr<scalar_t>(),
+                                     offset.data_ptr<scalar_t>(),
+                                     mask.data_ptr<scalar_t>(),
                                      batch, channels, height, width,
                                      height_out, width_out, kernel_h, kernel_w,
                                      pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w,
                                      deformable_group,
-                                     columns.data<scalar_t>());
+                                     columns.data_ptr<scalar_t>());
 
     long m = channels_out;
     long n = height_out * width_out;
@@ -299,37 +299,37 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
 
         // gradient w.r.t. input coordinate data
         modulated_deformable_col2im_coord_cuda(c10::cuda::getCurrentCUDAStream(),
-                                               columns.data<scalar_t>(),
-                                               input_n.data<scalar_t>(),
-                                               offset_n.data<scalar_t>(),
-                                               mask_n.data<scalar_t>(),
+                                               columns.data_ptr<scalar_t>(),
+                                               input_n.data_ptr<scalar_t>(),
+                                               offset_n.data_ptr<scalar_t>(),
+                                               mask_n.data_ptr<scalar_t>(),
                                                1, channels, height, width,
                                                height_out, width_out, kernel_h, kernel_w,
                                                pad_h, pad_w, stride_h, stride_w,
                                                dilation_h, dilation_w, deformable_group,
-                                               grad_offset_n.data<scalar_t>(),
-                                               grad_mask_n.data<scalar_t>());
+                                               grad_offset_n.data_ptr<scalar_t>(),
+                                               grad_mask_n.data_ptr<scalar_t>());
         // gradient w.r.t. input data
         modulated_deformable_col2im_cuda(c10::cuda::getCurrentCUDAStream(),
-                                         columns.data<scalar_t>(),
-                                         offset_n.data<scalar_t>(),
-                                         mask_n.data<scalar_t>(),
+                                         columns.data_ptr<scalar_t>(),
+                                         offset_n.data_ptr<scalar_t>(),
+                                         mask_n.data_ptr<scalar_t>(),
                                          1, channels, height, width,
                                          height_out, width_out, kernel_h, kernel_w,
                                          pad_h, pad_w, stride_h, stride_w,
                                          dilation_h, dilation_w, deformable_group,
-                                         grad_input_n.data<scalar_t>());
+                                         grad_input_n.data_ptr<scalar_t>());
 
         // gradient w.r.t. weight, dWeight should accumulate across the batch and group
         modulated_deformable_im2col_cuda(c10::cuda::getCurrentCUDAStream(),
-                                         input_n.data<scalar_t>(),
-                                         offset_n.data<scalar_t>(),
-                                         mask_n.data<scalar_t>(),
+                                         input_n.data_ptr<scalar_t>(),
+                                         offset_n.data_ptr<scalar_t>(),
+                                         mask_n.data_ptr<scalar_t>(),
                                          1, channels, height, width,
                                          height_out, width_out, kernel_h, kernel_w,
                                          pad_h, pad_w, stride_h, stride_w,
                                          dilation_h, dilation_w, deformable_group,
-                                         columns.data<scalar_t>());
+                                         columns.data_ptr<scalar_t>());
 
         long m_ = channels_out;
         long n_ = channels * kernel_h * kernel_w;
