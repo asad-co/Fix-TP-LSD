@@ -101,7 +101,7 @@ def validate(model, val_loader, params):
     
     with torch.no_grad():
         for i, data in enumerate(val_loader):
-            # Get data
+            # Get data and move to correct device
             inputs = data["input"].cuda()
             targets = {
                 "center": data["center"].cuda(),
@@ -124,6 +124,15 @@ def train(params):
     """
     Main training function
     """
+    # Check CUDA availability and initialize properly
+    if torch.cuda.is_available():
+        torch.cuda.init() # Ensure CUDA is initialized
+        device = torch.device('cuda')
+        torch.cuda.set_device(0) # Explicitly set to first device
+        print(f"Using CUDA device: {torch.cuda.current_device()}")
+    else:
+        raise RuntimeError("CUDA not available, but training requires GPU")
+    
     # Create datasets and data loaders
     train_dataset = LineSegmentDataset(
         params.train_file, params.image_dir, params.label_dir, params, is_train=True
@@ -143,8 +152,9 @@ def train(params):
     
     # Initialize model
     model = load_model(params.model, params.load_model_path, params.resume, params.selftrain)
-    model = model.cuda()
-    model = nn.DataParallel(model)
+    if torch.cuda.is_available():
+        model = model.cuda()
+        model = nn.DataParallel(model)
     
     # Initialize optimizer
     optimizer = optimizer_define(model, params.optim_weight, params.learning_rate)
@@ -186,9 +196,9 @@ def train(params):
             # Get data
             inputs = data["input"].cuda()
             targets = {
-                "center": data["center"],
-                "dis": data["dis"],
-                "line": data["line"]
+                "center": data["center"].cuda(),
+                "dis": data["dis"].cuda(),
+                "line": data["line"].cuda()
             }
             
             # Forward pass
