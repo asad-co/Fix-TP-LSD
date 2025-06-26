@@ -50,7 +50,7 @@ import numpy as np
 import os
 import time
 import cv2 as cv
-from lbdmod.build import pylbd
+import pylbd
 import torch
 from utils.reconstruct import TPS_line
 
