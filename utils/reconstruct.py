@@ -43,7 +43,7 @@ def save_pic_mat(lmbd, thresh, outputs, image, filename, log_path, save_mat=Fals
 
     if save_mat:
         center = output['center'][0][0].detach().cpu().numpy()
-        pos_mat = pos.astype(np.int)
+        pos_mat = pos.astype(np.int32)
         if len(pos) > 0:
             savescorelist = center.copy()
             savescorelist = savescorelist[pos_mat[:, 1], pos_mat[:, 0]].tolist()
@@ -61,7 +61,7 @@ def save_pic_mat(lmbd, thresh, outputs, image, filename, log_path, save_mat=Fals
         center = output['center'][0][0].detach().cpu().numpy()
         line_hm = output['line'][0][0].detach().cpu().numpy()
         for i in range(center_list.shape[0]):
-            center_coor = (center_list[i][0], center_list[i][1])
+            center_coor = (int(center_list[i][0]), int(center_list[i][1]))
             start_coor = (int(start_point[i][0]), int(start_point[i][1]))
             end_coor = (int(end_point[i][0]), int(end_point[i][1]))
 
