@@ -44,10 +44,10 @@
 # --------------------------------------------------------------------*/
 # %BANNER_END%
 
+import os
 import argparse
 import glob
 import numpy as np
-import os
 import time
 import cv2 as cv
 import pylbd
@@ -270,7 +270,6 @@ class TplsdDetect:
     from modeling.TP_Net import Res160, Res320
     from modeling.Hourglass import HourglassNet
 
-    
     print('Using device: ', device)
     self.head = {'center': 1, 'dis': 4, 'line': 1}
 
@@ -377,7 +376,7 @@ if __name__ == '__main__':
 
   # Create a window to display the demo.
   win = 'Line Tracker'
-  cv.namedWindow(win)
+  # cv.namedWindow(win)
 
   print('==> Running Demo.')
 
@@ -406,11 +405,8 @@ if __name__ == '__main__':
     out = oriimg
     tracker.draw_tracks(out,200)
 
-    cv.imshow(win,out)
-    key = cv.waitKey(opt.waitkey) & 0xFF
-    if key == ord('q'):
-      print('Quitting, \'q\' pressed.')
-      break
+    os.makedirs('output_images', exist_ok=True)
+    cv.imwrite(f'output_images/frame_{frame:04d}.jpg', out)
 
 
     end = time.time()
