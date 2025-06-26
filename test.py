@@ -11,12 +11,12 @@ from progress.bar import Bar
 from utils.utils import load_model
 from utils.reconstruct import save_pic_mat, save_image
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-if device == 'cpu':
-    raise Exception('cpu version for training is not implemented.')
+assert torch.cuda.is_available(), "CUDA is required for testing"
 
-print('Using device: ', device)
-
+# Set device explicitly
+device = torch.device("cuda:0")
+torch.cuda.set_device(device)
+print(f"Using CUDA device {torch.cuda.current_device()}: {torch.cuda.get_device_name(0)}")
 
 BasicParameters = BasicParam()
 log_path = BasicParameters.save_path

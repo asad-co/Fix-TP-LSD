@@ -8,10 +8,9 @@ from modeling.TP_Net import Res160, Res320
 class BasicParam(object):
     def __init__(self):
         # path for images
-        self.dataset_dir = 'path for imgs'
-
-        # path for results
-        self.save_path = 'log/test/'
+        self.dataset_dir = '/content/dataset/images'  # Path to your test images
+        self.load_model_path = '/content/log/train/model_best.pth'  # Path to your trained model
+        self.save_path = '/content/output_dir' 
 
         self.batch_size = 1
         self.num_workers = 0
