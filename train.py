@@ -122,6 +122,23 @@ def validate(model, val_loader, params):
     
     return val_loss.avg
 
+def custom_collate_fn(batch):
+    """Custom collate function that handles variable-sized tensors"""
+    collated_batch = {}
+    
+    # Process standard tensor items (input, center, dis, line)
+    for key in ['input', 'center', 'dis', 'line']:
+        collated_batch[key] = torch.utils.data._utils.collate.default_collate([item[key] for item in batch])
+    
+    # Handle origin_img and filename as lists
+    collated_batch['origin_img'] = [item['origin_img'] for item in batch]
+    collated_batch['filename'] = [item['filename'] for item in batch]
+    
+    # Handle line_segments as a list (don't try to stack them)
+    collated_batch['line_segments'] = [item['line_segments'] for item in batch]
+    
+    return collated_batch
+
 def train(params):
     """
     Main training function
@@ -145,11 +162,11 @@ def train(params):
     
     train_loader = DataLoader(
         train_dataset, batch_size=params.batch_size, shuffle=True,
-        num_workers=params.num_workers, pin_memory=True
+        num_workers=params.num_workers, pin_memory=True, collate_fn=custom_collate_fn
     )
     val_loader = DataLoader(
         val_dataset, batch_size=params.batch_size, shuffle=False,
-        num_workers=params.num_workers, pin_memory=True
+        num_workers=params.num_workers, pin_memory=True, collate_fn=custom_collate_fn
     )
     
     # Create the model on demand
