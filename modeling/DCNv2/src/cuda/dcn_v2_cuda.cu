@@ -62,11 +62,11 @@ dcn_v2_cuda_forward(const at::Tensor &input,
 {
     using scalar_t = float;
     // THCAssertSameGPU(THCudaTensor_checkGPU(state, 5, input, weight, bias, offset, mask));
-    AT_ASSERTM(input.type().is_cuda(), "input must be a CUDA tensor");
-    AT_ASSERTM(weight.type().is_cuda(), "weight must be a CUDA tensor");
-    AT_ASSERTM(bias.type().is_cuda(), "bias must be a CUDA tensor");
-    AT_ASSERTM(offset.type().is_cuda(), "offset must be a CUDA tensor");
-    AT_ASSERTM(mask.type().is_cuda(), "mask must be a CUDA tensor");
+    AT_ASSERTM(input.device().is_cuda(), "input must be a CUDA tensor");
+    AT_ASSERTM(weight.device().is_cuda(), "weight must be a CUDA tensor");
+    AT_ASSERTM(bias.device().is_cuda(), "bias must be a CUDA tensor");
+    AT_ASSERTM(offset.device().is_cuda(), "offset must be a CUDA tensor");
+    AT_ASSERTM(mask.device().is_cuda(), "mask must be a CUDA tensor");
 
     const int batch = input.size(0);
     const int channels = input.size(1);
