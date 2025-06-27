@@ -17,8 +17,8 @@ class TrainParameters:
         self.num_workers = 4
         self.head = {'center': 1, 'dis': 4, 'line': 1}
         self.cuda = True
-        self.epochs = 100
-        self.save_interval = 5
+        self.epochs = 10000
+        self.save_interval = 200
         
         # Learning rate settings
         self.learning_rate = 1e-5
@@ -43,10 +43,10 @@ class TrainParameters:
         self.selftrain = False
         
         # Model parameters without actual initialization
-        self.model_type = 'Res160'  # Options: 'Res320', 'Res160', 'HourglassNet'
-        self.load_model_path = './pretraineds/Res160.pth'
-        self.inres = (320, 320)
-        self.outres = (320, 320)
+        self.model_type = 'Res512'  # Options: 'Res320', 'Res160', 'HourglassNet'
+        self.load_model_path = './pretraineds/Res512.pth'
+        self.inres = (512, 512)
+        self.outres = (512, 512)
         
         # Enable logging
         self.logger = True
